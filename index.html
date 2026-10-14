@@ -273,7 +273,7 @@ input[type=range]{width:100%;accent-color:var(--primary)}
 <script>
 'use strict';
 /* ===== Budget Planner — QaisarDigital ===== */
-const APP = {name:'Budget Planner', studio:'QaisarDigital', version:'1.0.0', key:'qd_budget_v1'};
+const APP = {name:'Budget Planner', studio:'QaisarDigital', version:'1.0.1', key:'qd_budget_v1'};
 
 /* ---------- icons ---------- */
 const IP = {
@@ -1040,7 +1040,7 @@ SUBV.accounts = () => `<div class="between"><h1>Accounts</h1><button class="btn 
   ${DB.accounts.length?`<div class="row" style="margin-top:12px"><button class="btn" data-act="checkMoney">${ic('check')} Check my money</button><button class="btn" data-act="transfer">${ic('repeat')} Move money between accounts</button></div>`:''}`;
 ACT.acctEdit = id => {
   const a = DB.accounts.find(x=>x.id===id) || {id:uid(), name:DB.accounts.length?'':'Checking', type:'checking', base:'', asOf:0, inSafe:true}, ex = DB.accounts.includes(a);
-  const ov = modal(ex?'Edit account':'Add an account', `<div class="sec"><label class="f">Name</label><input type="text" id="a-n" value="${esc(a.name)}" placeholder="Checking"></div>
+  const ov = modal(ex?'Edit account':'Add an account', `<div class="sec"><label class="f">Name</label><input type="text" id="a-n" value="${esc(a.name)}" placeholder="${DB.accounts.length?'e.g. Savings, Cash, Visa card':'e.g. Checking'}"></div>
    <div class="grid g2 sec"><div><label class="f">Type</label><select id="a-t">${ACCT_TYPES.map(([k,l])=>`<option value="${k}" ${k===a.type?'selected':''}>${l}</option>`).join('')}</select></div><div><label class="f">Balance right now (${esc(cur())})</label><input type="text" inputmode="decimal" id="a-b" value="${ex?r2(bal(a)):''}" class="num" placeholder="0.00"></div></div>
    <label class="row sec small"><input type="checkbox" class="chk" id="a-s" ${a.inSafe!==false?'checked':''}> Count this account in safe-to-spend</label><p class="tiny faint">Tip: leave savings accounts out so that money isn't treated as spending money.</p>`,
    `${ex?'<button class="btn danger ghost" data-del style="margin-right:auto">Delete</button>':''}<button class="btn" data-c>Cancel</button><button class="btn pri" data-s>Save</button>`);
@@ -1145,8 +1145,9 @@ bindPage = () => {
   const im=$('#imp'); if (im) im.onchange = () => im.files[0] && importFile(im.files[0]);
   const dx=$('#dx'); if (dx) { dx.oninput = () => { const b=dx.parentElement.querySelector('b'); if (b) b.textContent = money(+dx.value,0); }; dx.onchange = () => { DB.debtPlan.extra=+dx.value; save(); render(); }; }
   const fsp=$('#fsp'); if (fsp) fsp.onchange = () => { S.fspend=fsp.checked; render(); };
-  const chg = (id, f) => { const e=$(id); if (e) e.onchange = () => { if (f(e.value.trim()) !== false){ save(); render(); toast('Saved'); } }; };
-  chg('#s-name', v=>{ DB.settings.name=v; }); chg('#s-cur', v=>{ DB.settings.currency=v; });
+  // Save without re-rendering (re-render steals focus mid-typing, e.g. in the date box). Only currency needs a redraw.
+  const chg = (id, f, redraw, ev='change') => { const e=$(id); if (e) e.addEventListener(ev, () => { if (f(e.value.trim()) !== false){ save(); if (redraw) render(); toast('Saved'); } }); };
+  chg('#s-name', v=>{ DB.settings.name=v; }); chg('#s-cur', v=>{ DB.settings.currency=v; }, true);
   chg('#s-pd', v=>{ DB.settings.payday=v; }); chg('#s-pf', v=>{ DB.settings.payFreq=v; });
   chg('#s-pa', v=>{ const n=pnum(v); if (v && !(n>=0)) { toast('Enter a number'); return false; } DB.settings.payAmount = n>0?n:0; });
   chg('#s-bf', v=>{ const n=pnum(v); if (v && !(n>=0)) { toast('Enter a number'); return false; } DB.settings.buffer = n>0?n:0; });
